@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Tabs } from '@redux-devtools/ui';
 import Themes from './Themes';
 import StateTree from './StateTree';
+import AIConfig from './AIConfig';
 
 interface Props {
   extraTabs?: { name: string; component: React.ComponentType }[];
@@ -24,6 +25,7 @@ export default class Settings extends Component<Props, State> {
       ...extraTabs,
       { name: 'Themes', component: Themes },
       { name: 'State Tree', component: StateTree },
+      { name: 'Redux sWhisper', component: AIConfig}
     ];
     return (
       // eslint-disable-next-line @typescript-eslint/no-empty-object-type
