@@ -81,18 +81,18 @@ const AIConfig = () => {
 
   const handleSave = () => {
     const errors: string[] = []
-    if(!config.apiKey){
-      errors.push(ERRORS.apiKey)
-    }
+    
     if(!config.model){
       errors.push(ERRORS.model)
+    }
+    if(!config.apiKey){
+      errors.push(ERRORS.apiKey)
     }
 
     setFormConfig({
       ...formConfig,
       errors
     })
-
     if(!errors.length){
       // should save a config with some redux actions.
     }
