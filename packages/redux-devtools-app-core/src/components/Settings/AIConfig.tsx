@@ -33,7 +33,6 @@ const ERRORS = {
 const defaultSchema: Schema = {
   type: 'object',
   title: 'Select your provider, and insert your API key.',
-  required: ['apiKey', 'provider'],
   properties: {
     model: {
       type: 'string',
