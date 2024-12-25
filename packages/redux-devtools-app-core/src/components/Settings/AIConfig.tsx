@@ -1,7 +1,6 @@
 import { Container, Form, Notification } from '@redux-devtools/ui';
 import { IChangeEvent } from '@rjsf/core';
 import { JSONSchema7Definition, JSONSchema7TypeName } from 'json-schema';
-import { type } from 'os';
 import React, { useState } from 'react';
 
 interface Schema {
