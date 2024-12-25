@@ -1,12 +1,9 @@
-import { Container, Form } from '@redux-devtools/ui';
+import { Container, Form, Notification } from '@redux-devtools/ui';
 import { IChangeEvent } from '@rjsf/core';
 import { JSONSchema7Definition, JSONSchema7TypeName } from 'json-schema';
+import { type } from 'os';
 import React, { useState } from 'react';
 
-interface IStateConfig {
-  provider: string;
-  apiKey: string;
-}
 interface Schema {
   type: JSONSchema7TypeName;
   required?: string[];
@@ -17,8 +14,21 @@ interface Schema {
 }
 
 interface FormData {
-  provider: string;
+  model: string;
   apiKey: string;
+}
+
+export type TModel = { model: string, provider: string, apiKey: string }
+
+const MODELS: Pick<TModel, 'model' | 'provider'>[] = [
+  { model: 'grok-2-1212', provider: 'OpenAI' },
+  { model: 'gpt-4o', provider: 'OpenAI'},
+  { model: 'gpt-40-mini', provider: 'OpenAI'}
+]
+
+const ERRORS = {
+  apiKey: 'Insert an API KEY!',
+  model: 'Select a Model Name!'
 }
 
 const defaultSchema: Schema = {
@@ -26,10 +36,10 @@ const defaultSchema: Schema = {
   title: 'Select your provider, and insert your API key.',
   required: ['apiKey', 'provider'],
   properties: {
-    provider: {
+    model: {
       type: 'string',
-      title: 'Provider name',
-      enum: ['xAI', 'OpenAI'],
+      title: 'Model Name',
+      enum: MODELS.map(({ model }) => model),
     },
     apiKey: {
       type: 'string',
@@ -39,27 +49,53 @@ const defaultSchema: Schema = {
 };
 
 const defaultFormData: FormData = {
-  provider: '',
+  model: '',
   apiKey: '',
 };
 
 const AIConfig = () => {
-  const [formConfig, setFormConfig] = useState({
+  const [config, setConfig] = useState<TModel>({ model: '', provider: '',  apiKey: '' })
+  const [formConfig, setFormConfig] = useState<{
+    schema: Schema, formData: FormData, errors: string[]
+  }>({
     schema: defaultSchema,
     formData: defaultFormData,
+    errors: []
   });
 
-  const formChange = (data: IChangeEvent<FormData>) => {
-    if (data.formData) {
+  const formChange = ({ formData, schema}: IChangeEvent<FormData>) => {
+    if (formData) {
       setFormConfig({
-        formData: data.formData,
-        schema: data.schema as Schema,
+        ...formConfig,
+        formData: formData,
+        schema: schema as Schema,
       });
+
+      setConfig({
+        model: formData.model,
+        apiKey: formData.apiKey,
+        provider: MODELS.find(({ model }) => model === formData.model)?.provider || 'OpenAI',
+      })
     }
   };
 
   const handleSave = () => {
-    console.log('should save the config', { formConfig })
+    const errors: string[] = []
+    if(!config.apiKey){
+      errors.push(ERRORS.apiKey)
+    }
+    if(!config.model){
+      errors.push(ERRORS.model)
+    }
+
+    setFormConfig({
+      ...formConfig,
+      errors
+    })
+
+    if(!errors.length){
+      // should save a config with some redux actions.
+    }
   }
 
   return (
@@ -69,12 +105,13 @@ const AIConfig = () => {
         formData={formConfig.formData}
         schema={formConfig.schema}
         onChange={formChange}
-      />
-      <div
-        style={{
-          padding: '10px',
-        }}
-      >
+      />  
+      <div style={{
+        display:'flex',
+        flexDirection: 'column',
+        gap:'10px',
+        padding: '10px'
+      }}>
         <button
           onClick={handleSave}
           style={{
@@ -88,6 +125,13 @@ const AIConfig = () => {
         >
           save
         </button>
+        {
+          formConfig.errors.map((error, index) => {
+            return (
+              <Notification key={index} type='error'>{error}</Notification>
+            )
+          })
+        }
       </div>
     </Container>
   );
