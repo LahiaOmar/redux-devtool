@@ -87,7 +87,7 @@ class ActionPreview<S, A extends Action<string>> extends Component<
       error,
       nextState,
       onInspectPath,
-      inspectedPath,
+      inspectedPath = [],
       tabName,
       isWideLayout,
       onSelectTab,
@@ -183,7 +183,7 @@ class ActionPreview<S, A extends Action<string>> extends Component<
   }
 
   labelRenderer: LabelRenderer = ([key, ...rest], nodeType, expanded) => {
-    const { onInspectPath, inspectedPath } = this.props;
+    const { onInspectPath, inspectedPath = [] } = this.props;
 
     return (
       <span>
@@ -201,7 +201,7 @@ class ActionPreview<S, A extends Action<string>> extends Component<
           })}
           onClick={() =>
             onInspectPath([
-              ...inspectedPath.slice(0, inspectedPath.length - 1),
+              ...inspectedPath.slice(0, inspectedPath?.length - 1),
               ...[key, ...rest].reverse(),
             ])
           }

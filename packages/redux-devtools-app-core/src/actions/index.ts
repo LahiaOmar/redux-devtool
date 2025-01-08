@@ -26,6 +26,8 @@ import {
   SET_PERSIST,
   CHANGE_STATE_TREE_SETTINGS,
   CLEAR_INSTANCES,
+  SAVE_AI_CONFIG,
+  CLEAR_AI_CONFIG,
 } from '../constants/actionTypes';
 import { Action } from 'redux';
 import { Features, State } from '../reducers/instances';
@@ -33,6 +35,7 @@ import { MonitorStateMonitorState } from '../reducers/monitor';
 import { LiftedAction } from '@redux-devtools/core';
 import { Data } from '../reducers/reports';
 import { LiftedState } from '@redux-devtools/core';
+import { TModel } from '../components/Settings/AIConfig';
 
 let monitorReducer: (
   monitorProps: unknown,
@@ -41,6 +44,26 @@ let monitorReducer: (
 ) => unknown;
 let monitorProps: unknown = {};
 
+export interface SaveAIConfig {
+  readonly type: typeof SAVE_AI_CONFIG,
+  readonly payload: TModel
+}
+
+export interface ClearAIConfig {
+  readonly type: typeof CLEAR_AI_CONFIG,
+}
+export function saveConfig(config: TModel){
+  return {
+    type: SAVE_AI_CONFIG,
+    payload: config
+  }
+}
+
+export function clearConfig(){
+  return {
+    type: CLEAR_AI_CONFIG
+  }
+}
 export interface ChangeSectionAction {
   readonly type: typeof CHANGE_SECTION;
   readonly section: string;
@@ -192,6 +215,7 @@ export type LiftedActionAction =
   | LiftedActionExportAction;
 export function liftedDispatch(
   action:
+    SaveAIConfig
     | InitMonitorAction
     | JumpToStateAction
     | JumpToActionAction
@@ -485,6 +509,8 @@ export interface ReduxPersistRehydrateAction {
 }
 
 export type CoreStoreActionWithoutUpdateStateOrLiftedAction =
+  | SaveAIConfig
+  | ClearAIConfig
   | ChangeSectionAction
   | ChangeThemeAction
   | ChangeStateTreeSettingsAction

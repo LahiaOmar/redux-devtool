@@ -25,7 +25,7 @@ export default class Settings extends Component<Props, State> {
       ...extraTabs,
       { name: 'Themes', component: Themes },
       { name: 'State Tree', component: StateTree },
-      { name: 'Redux sWhisper', component: AIConfig}
+      { name: 'Redux Whisper', component: AIConfig}
     ];
     return (
       // eslint-disable-next-line @typescript-eslint/no-empty-object-type

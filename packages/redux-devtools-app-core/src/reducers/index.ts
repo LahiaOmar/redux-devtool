@@ -5,7 +5,8 @@ import { instances, InstancesState } from './instances';
 import { reports, ReportsState } from './reports';
 import { theme, ThemeState } from './theme';
 import { stateTreeSettings, StateTreeSettings } from './stateTreeSettings';
-
+import { TModel } from '../components/Settings/AIConfig';
+import { aiConfigReducer } from './aiconfig'
 export interface CoreStoreState {
   readonly section: SectionState;
   readonly theme: ThemeState;
@@ -14,6 +15,7 @@ export interface CoreStoreState {
   readonly instances: InstancesState;
   readonly reports: ReportsState;
   readonly notification: NotificationState;
+  readonly aiConfig: TModel; 
 }
 
 export const coreReducers = {
@@ -24,4 +26,5 @@ export const coreReducers = {
   instances,
   reports,
   notification,
+  aiConfigReducer
 };
