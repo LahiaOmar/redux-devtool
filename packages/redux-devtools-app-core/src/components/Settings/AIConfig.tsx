@@ -55,7 +55,7 @@ const ERRORS = {
 
 const defaultSchema: Schema = {
   type: 'object',
-  title: 'Select your provider, and insert your API key.',
+  title: 'Model Configuration',
   properties: {
     provider: {
       type: 'string',
