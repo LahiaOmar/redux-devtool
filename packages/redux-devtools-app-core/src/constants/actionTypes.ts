@@ -28,3 +28,5 @@ export const ERROR = 'ERROR';
 
 export const SAVE_AI_CONFIG = 'save_ai_config'
 export const CLEAR_AI_CONFIG = 'clear_ai_config'
+export const SAVE_AI_MESSAGES = 'save_ai_messages'
+export const CLEAR_AI_MESSAGES = 'clear_ai_messages'

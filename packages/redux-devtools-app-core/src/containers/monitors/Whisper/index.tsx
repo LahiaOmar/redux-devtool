@@ -41,7 +41,7 @@ const mapStateToProps = (state: CoreStoreState) => {
   return {
     actionsById,
     computedStates,
-    aiConfig: state.aiConfig
+    aiConfig: state.whisper.config
   }
 }
 

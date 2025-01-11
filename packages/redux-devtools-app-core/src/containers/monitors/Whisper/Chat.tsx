@@ -7,7 +7,11 @@ import { TModel } from '../../../components/Settings/AIConfig';
 import { FaUser } from 'react-icons/fa';
 import { PiWaveformBold } from 'react-icons/pi';
 import { IconType } from 'react-icons';
-
+import { useDispatch, useSelector } from 'react-redux';
+import { CoreStoreState } from '../../../reducers'
+import { getActiveInstance } from '../../../reducers/instances';
+import { TWhisperMessages } from '../../../reducers/aiconfig';
+import { clearMessages, saveMessages } from '../../../actions';
 const ChatContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -45,12 +49,12 @@ const TextMessage = styled.div`
   margin-top: 8px;
 `;
 
-const Message = ({ sender, text }: { sender: TSender; text: string }) => {
+const Message = ({ sender, message }: { sender: TWhisperMessages['sender']; message: string }) => {
   if (sender === 'model') {
     return (
       <ModelMessage>
         <ModelMessageIcon />
-        <TextMessage>{text}</TextMessage>
+        <TextMessage>{message}</TextMessage>
       </ModelMessage>
     );
   }
@@ -58,7 +62,7 @@ const Message = ({ sender, text }: { sender: TSender; text: string }) => {
   return (
     <UserMessage>
       <UserMessageIcon />
-      <TextMessage>{text}</TextMessage>
+      <TextMessage>{message}</TextMessage>
     </UserMessage>
   );
 };
@@ -67,27 +71,41 @@ interface IChatWhisper {
   config: TModel;
   actionsMapStates: TActionsMapStates;
 }
-type TSender = 'user' | 'model';
-type TChatMessage = { sender: TSender; text: string };
+
 const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
-  const [messages, setMessages] = useState<TChatMessage[]>([]);
   const { modelAnswer } = useAIModel(config);
-  const containerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dispatch = useDispatch()
+  const { instanceId, messages: currentMessage } = useSelector((state: CoreStoreState) => {
+    const instanceId = getActiveInstance(state.instances)
+    const messages = state.whisper.messages[instanceId] || []
+
+    return {
+      messages,
+      instanceId: String(instanceId)
+    }
+  });
+  const [messages, setMessages] = useState<TWhisperMessages[]>(currentMessage);
 
   const handleSend = async (msg: string) => {
     if (msg.trim()) {
-      const userMessage = { sender: 'user', text: msg } as TChatMessage;
+      const userMessage = { sender: 'user', message: msg } as TWhisperMessages;
       setMessages([...messages, userMessage]);
 
       const modelResponse = await modelAnswer(msg, actionsMapStates);
 
       const modelMessage = {
         sender: 'model',
-        text: modelResponse,
-      } as TChatMessage;
+        message: modelResponse,
+      } as TWhisperMessages;
       setMessages([...messages, userMessage, modelMessage]);
     }
   };
+
+  const clearAllMessages = () => {
+    dispatch(clearMessages(instanceId))
+    setMessages([])
+  }
 
   useEffect(() => {
     if(containerRef.current){
@@ -95,16 +113,23 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
     }
   }, [messages])
 
+  useEffect(() => {
+    dispatch(saveMessages(instanceId, messages))
+  }, [instanceId, messages])
+
+
   return (
     <ChatContainer ref={containerRef}>
       {!messages.length && <h1>How can i help you ?</h1>}
       {messages.map((msg, index) => {
-        return <Message key={index} sender={msg.sender} text={msg.text} />;
+        return <Message key={index} sender={msg.sender} message={msg.message} />;
       })}
       <UserInput
         sendMessage={async (msg) => {
           await handleSend(msg);
         }}
+
+        clearAllMessages={clearAllMessages}
       />
     </ChatContainer>
   );
@@ -134,11 +159,20 @@ const Input = styled.input`
   height: 40px;
 `;
 
+const ClearMessages = styled.button`
+  height: 40px;
+  padding: 10px 15px 10px 15px;
+  font-size: 15px;
+  text-align: center;
+`
+
 interface IUserInput {
   sendMessage: (msg: string) => void;
+  clearAllMessages: () => void;
 }
-const UserInput: FC<IUserInput> = ({ sendMessage }) => {
+const UserInput: FC<IUserInput> = ({ sendMessage, clearAllMessages }) => {
   const [message, setMesage] = useState('');
+
   const userInputChange = (text: string) => {
     setMesage(text);
   };
@@ -162,6 +196,7 @@ const UserInput: FC<IUserInput> = ({ sendMessage }) => {
         onChange={(ev) => userInputChange(ev.target.value)}
       />
       <SendButton onClick={sendHandler}>Send</SendButton>
+      <ClearMessages onClick={clearAllMessages}>Clear Messages</ClearMessages>
     </UserInputContainer>
   );
 };

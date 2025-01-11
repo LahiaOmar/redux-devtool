@@ -45,7 +45,11 @@ interface FormData {
   apiKey: string;
 }
 
-export type TModel = { model: TProvidersModels, provider: TProviders, apiKey: string, baseURL: string; }
+export type TModel = { 
+  model: TProvidersModels | '', 
+  provider: TProviders | '' , 
+  apiKey: string, 
+  baseURL: string; }
 
 const ERRORS = {
   apiKey: 'Insert an API KEY!',
@@ -107,10 +111,12 @@ const AIConfig = () => {
     errors: []
   });
   const dispatch = useDispatch()
-  const storeAiConfig = useSelector((state: CoreStoreState) => state.aiConfig)
+  const storeAiConfig = useSelector((state: CoreStoreState) => state.whisper.config)
 
   useEffect(() => {
     const storeConfig = storeAiConfig
+
+    if(!storeConfig || !storeConfig.provider) return
 
     setConfig(storeConfig)
     setFormConfig({
@@ -133,7 +139,7 @@ const AIConfig = () => {
         }
       }
     })
-  }, [storeAiConfig.provider])
+  }, [storeAiConfig?.provider])
 
   const formChange = ({ formData, schema}: IChangeEvent<FormData>) => {
     if (formData) {
