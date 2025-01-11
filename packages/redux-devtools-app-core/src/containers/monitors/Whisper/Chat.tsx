@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 import { useAIModel } from './Model';
 
 import styled from 'styled-components';
@@ -6,6 +6,7 @@ import { TActionsMapStates } from '.';
 import { TModel } from '../../../components/Settings/AIConfig';
 import { FaUser } from 'react-icons/fa';
 import { PiWaveformBold } from 'react-icons/pi';
+import { IconType } from 'react-icons';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -18,8 +19,8 @@ const ChatContainer = styled.div`
 
 const MessageContianer = styled.div`
   display: flex;
-  width: 80%;
-  padding: 15px;
+  width: 90%;
+  padding: 5px;
   column-gap: 20px;
 `
 
@@ -27,22 +28,28 @@ const ModelMessage = styled(MessageContianer)``
 
 const UserMessage = styled(MessageContianer)``
 
+const createMessageIcon = (icon: IconType) => styled(icon)`
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  padding: 10px;
+  border: rgb(153 163 177) 1px solid;
+  border-radius: 50%;
+`
+const UserMessageIcon = createMessageIcon(FaUser)
+
+const ModelMessageIcon = createMessageIcon(PiWaveformBold)
+
 const TextMessage = styled.div`
   font-size: 15px;
+  margin-top: 8px;
 `;
 
 const Message = ({ sender, text }: { sender: TSender; text: string }) => {
   if (sender === 'model') {
     return (
       <ModelMessage>
-        <PiWaveformBold
-          style={{
-            width: '25px',
-            height: '25px',
-            flexShrink: '0',
-          }}
-        />
-
+        <ModelMessageIcon />
         <TextMessage>{text}</TextMessage>
       </ModelMessage>
     );
@@ -50,13 +57,7 @@ const Message = ({ sender, text }: { sender: TSender; text: string }) => {
 
   return (
     <UserMessage>
-      <FaUser
-        style={{
-          width: '25px',
-          height: '25px',
-          flexShrink: '0',
-        }}
-      />
+      <UserMessageIcon />
       <TextMessage>{text}</TextMessage>
     </UserMessage>
   );
@@ -71,6 +72,7 @@ type TChatMessage = { sender: TSender; text: string };
 const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
   const [messages, setMessages] = useState<TChatMessage[]>([]);
   const { modelAnswer } = useAIModel(config);
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   const handleSend = async (msg: string) => {
     if (msg.trim()) {
@@ -87,8 +89,14 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
     }
   };
 
+  useEffect(() => {
+    if(containerRef.current){
+      containerRef.current.scrollIntoView(false)
+    }
+  }, [messages])
+
   return (
-    <ChatContainer>
+    <ChatContainer ref={containerRef}>
       {!messages.length && <h1>How can i help you ?</h1>}
       {messages.map((msg, index) => {
         return <Message key={index} sender={msg.sender} text={msg.text} />;
@@ -136,7 +144,6 @@ const UserInput: FC<IUserInput> = ({ sendMessage }) => {
   };
 
   const onKeyUp = (ev: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log({ evkey: ev.key, ev });
     if (ev.key === 'Enter') {
       sendHandler();
     }

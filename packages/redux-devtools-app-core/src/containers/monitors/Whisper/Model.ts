@@ -8,7 +8,7 @@ type TInstance = OpenAI | CohereClientV2 | null
 const useAIModel  = (config: TModel) => {
   const [instance, setInstance] = useState<TInstance>(null)
 
-  const buildModelPrompt = (userMessage: string, actionsList: TActionsMapStates) => {
+  const buildModelPrompt = (actionsList: TActionsMapStates) => {
     return `
       You are a debugging assistant for a Redux application. 
       I will provide you with a list of actions that have occurred and the differences (diffs) between the previous state and the current state of the Redux store. 
@@ -16,10 +16,7 @@ const useAIModel  = (config: TModel) => {
   
       ### Actions and State Differences.
       [${JSON.stringify(actionsList)}]
-  
-      ### User Question
-      [${userMessage}]
-  
+    
       ### Instructions for the Answer
       1. Provide the **minimal possible answer** that directly addresses the user's question.
       2. Ensure the answer is as **clear and precise** as possible.
@@ -37,10 +34,9 @@ const useAIModel  = (config: TModel) => {
       For a question like:  
       *"Which actions caused items to be removed from the store?"*
   
-      The LLM should respond:  
+      You should respond with:  
       - \`"REMOVE_ITEM"\` removed an item with the \`inventory\`.  
       - *"No actions in the log triggered the removal of items from the store."*
-  
       ---
     `
   }
@@ -92,7 +88,7 @@ const useAIModel  = (config: TModel) => {
   const modelAnswer = async (userMessage: string, actionsMapStates: TActionsMapStates) => {
     if(!instance) return 'Error in Model initialization!'
 
-    const modelPrompt = buildModelPrompt(userMessage, actionsMapStates)
+    const modelPrompt = buildModelPrompt(actionsMapStates)
   
     return await createAnswer(modelPrompt, userMessage)
   }
