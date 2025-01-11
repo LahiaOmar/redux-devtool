@@ -11,7 +11,7 @@ import {
   StoreAction,
   StoreState,
   theme,
-  aiConfigReducer,
+  whisperReducer,
 } from '@redux-devtools/app';
 
 const rootReducer: Reducer<
@@ -28,7 +28,7 @@ const rootReducer: Reducer<
   theme,
   connection,
   stateTreeSettings,
-  aiConfig: aiConfigReducer
+  whisper: whisperReducer
 }) as any;
 
 export default rootReducer;
