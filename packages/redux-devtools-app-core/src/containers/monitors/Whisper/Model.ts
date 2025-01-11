@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 import { TActionsMapStates } from './index'
 import { TModel } from '../../../components/Settings/AIConfig'
 import { useEffect, useState } from 'react'
-import { CohereClient, CohereClientV2 } from 'cohere-ai'
+import { CohereClientV2 } from 'cohere-ai'
 type TInstance = OpenAI | CohereClientV2 | null
 
 const useAIModel  = (config: TModel) => {
