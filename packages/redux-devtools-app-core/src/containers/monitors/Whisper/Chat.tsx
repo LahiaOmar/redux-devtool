@@ -12,6 +12,11 @@ import { CoreStoreState } from '../../../reducers'
 import { getActiveInstance } from '../../../reducers/instances';
 import { TWhisperMessages } from '../../../reducers/aiconfig';
 import { clearMessages, saveMessages } from '../../../actions';
+import { IoMdSend } from "react-icons/io";
+import { AiOutlineClear } from "react-icons/ai";
+import { Button } from '@redux-devtools/ui';
+
+
 const ChatContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -147,24 +152,18 @@ const UserInputContainer = styled.div`
   padding: 5px;
   column-gap: 20px;
 `;
-const SendButton = styled.button`
-  height: 40px;
-  padding: 10px 15px 10px 15px;
-  font-size: 15px;
-  text-align: center;
-`;
 
 const Input = styled.input`
   width: 60%;
   height: 40px;
 `;
 
-const ClearMessages = styled.button`
-  height: 40px;
-  padding: 10px 15px 10px 15px;
-  font-size: 15px;
-  text-align: center;
-`
+const createChatIcon = (icon: IconType) => styled(icon)`
+  width: 50px;
+  height: 30px;
+` 
+const SendIcon = createChatIcon(IoMdSend)
+const ClearIcon = createChatIcon(AiOutlineClear)
 
 interface IUserInput {
   sendMessage: (msg: string) => void;
@@ -188,6 +187,10 @@ const UserInput: FC<IUserInput> = ({ sendMessage, clearAllMessages }) => {
     setMesage('');
   };
 
+  const clearMessagesHandler = () => {
+    clearAllMessages()
+  }
+
   return (
     <UserInputContainer>
       <Input
@@ -195,8 +198,12 @@ const UserInput: FC<IUserInput> = ({ sendMessage, clearAllMessages }) => {
         onKeyUp={onKeyUp}
         onChange={(ev) => userInputChange(ev.target.value)}
       />
-      <SendButton onClick={sendHandler}>Send</SendButton>
-      <ClearMessages onClick={clearAllMessages}>Clear Messages</ClearMessages>
+      <Button title='Send' onClick={sendHandler}> 
+        <SendIcon />        
+      </Button>
+      <Button title='Clear Messages' onClick={clearMessagesHandler}>
+        <ClearIcon />
+      </Button>
     </UserInputContainer>
   );
 };

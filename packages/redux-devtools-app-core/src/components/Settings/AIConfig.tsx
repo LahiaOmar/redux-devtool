@@ -1,4 +1,4 @@
-import { Container, Form, Notification } from '@redux-devtools/ui';
+import { Button, Container, Form, Notification } from '@redux-devtools/ui';
 import { IChangeEvent } from '@rjsf/core';
 import { JSONSchema7Definition, JSONSchema7TypeName } from 'json-schema';
 import React, { useEffect, useState } from 'react';
@@ -6,6 +6,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { CoreStoreState } from '../../reducers';
 import { clearConfig, saveConfig } from '../../actions';
 import styled from 'styled-components'
+import { LuSave } from "react-icons/lu";
+import { MdClear } from "react-icons/md";
+import { IconType } from 'react-icons';
 
 interface Schema {
   type: JSONSchema7TypeName;
@@ -91,14 +94,13 @@ const ButtonsContainer = styled.div`
   flex-direction: row;
   column-gap: 10px;
 `
-const Button = styled.button`
-  padding: '10px';
+const createConfigButton = (icon: IconType) => styled(icon)`
   width: '60px';
   height: '40px';
-  text-align: 'center';
-  font-size: '13px';
-  transform: 'CAPITALIZE';
 `
+
+const SaveConfig = createConfigButton(LuSave)
+const ClearConfig = createConfigButton(MdClear)
 
 const AIConfig = () => {
   const [config, setConfig] = useState<TConfig | null>()
@@ -238,18 +240,11 @@ const AIConfig = () => {
         padding: '10px'
       }}>
         <ButtonsContainer>
-          <Button
-            onClick={handleSave}
-          >
-            save
+          <Button title='Save Config' tooltipPosition='top-right' onClick={handleSave}>
+            <SaveConfig />
           </Button>
-          <Button
-            onClick={clearPreviousConfig} 
-            style={{
-
-            }}
-          >
-            Clear Previous Config!
+          <Button title='Clear Previous Config!' tooltipPosition='top-right' onClick={clearPreviousConfig}>
+            <ClearConfig />
           </Button>
         </ButtonsContainer>
         {
