@@ -138,7 +138,7 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
   useEffect(() => {
     const getModelResponse = async () => {
       if(needModelResponse){
-        const modelResponse = await modelAnswer(needModelResponse, actionsMapStates);
+        const modelResponse = await modelAnswer(needModelResponse, actionsMapStates, messages);
         
         let _messages = [...messages]
         const modelMessage = _messages.pop();

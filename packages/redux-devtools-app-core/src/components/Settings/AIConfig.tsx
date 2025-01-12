@@ -35,7 +35,7 @@ const PROVIDERS_AND_MODELS = {
   },
 };
 
-const PROVIDERS = ['xAI', 'OpenAI', 'Ollama', 'Cohere'];
+const PROVIDERS = ['xAI', 'OpenAI', /**'Ollama' ,*/ 'Cohere'];
 
 export type TProviders = keyof typeof PROVIDERS_AND_MODELS;
 export type TProvidersModels = {

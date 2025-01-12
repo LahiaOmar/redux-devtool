@@ -3,12 +3,13 @@ import { TActionsMapStates } from './index'
 import { TModel } from '../../../components/Settings/AIConfig'
 import { useEffect, useState } from 'react'
 import { CohereClientV2 } from 'cohere-ai'
+import { TWhisperMessages } from '../../../reducers/aiconfig'
 type TInstance = OpenAI | CohereClientV2 | null
 
 const useAIModel  = (config: TModel) => {
   const [instance, setInstance] = useState<TInstance>(null)
 
-  const buildModelPrompt = (actionsList: TActionsMapStates) => {
+  const buildModelPrompt = (actionsList: TActionsMapStates, history: TWhisperMessages[]) => {
     return `
       You are a debugging assistant for a Redux application. 
       I will provide you with a list of actions that have occurred and the differences (diffs) between the previous state and the current state of the Redux store. 
@@ -16,7 +17,10 @@ const useAIModel  = (config: TModel) => {
   
       ### Actions and State Differences.
       [${JSON.stringify(actionsList)}]
-    
+
+      ### History of the conversation
+      [${JSON.stringify(history)}]
+
       ### Instructions for the Answer
       1. Provide the **minimal possible answer** that directly addresses the user's question.
       2. Ensure the answer is as **clear and precise** as possible.
@@ -85,10 +89,10 @@ const useAIModel  = (config: TModel) => {
     }
   }
 
-  const modelAnswer = async (userMessage: string, actionsMapStates: TActionsMapStates) => {
+  const modelAnswer = async (userMessage: string, actionsMapStates: TActionsMapStates, history: TWhisperMessages[]) => {
     if(!instance) return 'Error in Model initialization!'
 
-    const modelPrompt = buildModelPrompt(actionsMapStates)
+    const modelPrompt = buildModelPrompt(actionsMapStates, history)
   
     return await createAnswer(modelPrompt, userMessage)
   }

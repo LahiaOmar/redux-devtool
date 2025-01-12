@@ -6,7 +6,7 @@ import { getActiveInstance } from '../../../reducers/instances'
 import { diff } from 'jsondiffpatch'
 
 type WhisperProps = ReturnType<typeof mapStateToProps>;
-export type TActionsMapStates = { action: string, stateDiff: string }[]
+export type TActionsMapStates = { action: string, jsonDiff: string }[]
 
 const WhisperChat = ({ aiConfig, actionsById, computedStates }: WhisperProps) => {
   const [actionsMapStates, setActionsMapStates] = useState<TActionsMapStates>([])
@@ -24,7 +24,7 @@ const WhisperChat = ({ aiConfig, actionsById, computedStates }: WhisperProps) =>
         strState = JSON.stringify(diff(computedState, computedStates[index - 1]))
       }
 
-      actionsMapState.push({ action: strAction, stateDiff: strState })
+      actionsMapState.push({ action: strAction, jsonDiff: strState })
     })
 
     setActionsMapStates(actionsMapState)
