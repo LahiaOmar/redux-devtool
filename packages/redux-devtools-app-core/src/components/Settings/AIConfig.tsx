@@ -1,13 +1,13 @@
 import { Button, Container, Form, Notification } from '@redux-devtools/ui';
 import { IChangeEvent } from '@rjsf/core';
 import { JSONSchema7Definition, JSONSchema7TypeName } from 'json-schema';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { CoreStoreState } from '../../reducers';
 import { clearConfig, saveConfig } from '../../actions';
-import styled from 'styled-components'
-import { LuSave } from "react-icons/lu";
-import { MdClear } from "react-icons/md";
+import styled from 'styled-components';
+import { LuSave } from 'react-icons/lu';
+import { MdClear } from 'react-icons/md';
 import { IconType } from 'react-icons';
 
 interface Schema {
@@ -20,45 +20,45 @@ interface Schema {
 }
 
 const PROVIDERS_AND_MODELS = {
-  'OpenAI': {
-    models: ['gpt-4o' , 'gpt-4o-mini'],
+  OpenAI: {
+    models: ['gpt-4o', 'gpt-4o-mini'],
   },
-  'xAI': {
+  xAI: {
     models: ['grok-2-1212'],
-    baseURL: "https://api.x.ai/v1",
+    baseURL: 'https://api.x.ai/v1',
   },
-  'Ollama': {
-    models: ['llama2:13b']
+  Ollama: {
+    models: ['llama2:13b'],
   },
-  'Cohere':{
-    models: ['command-r-plus']
-  }
-}
+  Cohere: {
+    models: ['command-r-plus'],
+  },
+};
 
+const PROVIDERS = ['xAI', 'OpenAI', 'Ollama', 'Cohere'];
 
-const PROVIDERS = ['xAI' ,'OpenAI' ,'Ollama', 'Cohere'];
-
-export type TProviders = keyof typeof PROVIDERS_AND_MODELS
+export type TProviders = keyof typeof PROVIDERS_AND_MODELS;
 export type TProvidersModels = {
-  [k in TProviders] : typeof PROVIDERS_AND_MODELS[k]['models'][number]
-} ;
+  [k in TProviders]: (typeof PROVIDERS_AND_MODELS)[k]['models'][number];
+};
 interface FormData {
   provider: TProviders | '';
   model: TProvidersModels | '';
   apiKey: string;
 }
 
-export type TModel = { 
-  model: TProvidersModels | '', 
-  provider: TProviders | '' , 
-  apiKey: string, 
-  baseURL: string; }
+export type TModel = {
+  model: TProvidersModels | '';
+  provider: TProviders | '';
+  apiKey: string;
+  baseURL: string;
+};
 
 const ERRORS = {
   apiKey: 'Insert an API KEY!',
   model: 'Select a Model Name!',
-  provider: 'Selct a Provider!'
-}
+  provider: 'Selct a Provider!',
+};
 
 const defaultSchema: Schema = {
   type: 'object',
@@ -72,12 +72,12 @@ const defaultSchema: Schema = {
     model: {
       type: 'string',
       title: 'Model Name',
-      enum: []
+      enum: [],
     },
     apiKey: {
       type: 'string',
       title: 'API KEY',
-    }
+    },
   },
 };
 
@@ -93,37 +93,42 @@ const ButtonsContainer = styled.div`
   display: flex;
   flex-direction: row;
   column-gap: 10px;
-`
+`;
 const createConfigButton = (icon: IconType) => styled(icon)`
   width: '60px';
   height: '40px';
-`
+`;
 
-const SaveConfig = createConfigButton(LuSave)
-const ClearConfig = createConfigButton(MdClear)
+const SaveConfig = createConfigButton(LuSave);
+const ClearConfig = createConfigButton(MdClear);
+const SAVE_SUCCESSFULLY_MESSAGE = 'Saved Successfully'
+const CLEAR_SUCCESSFULLY_MESSAGE = 'Cleared Successfully'
 
 const AIConfig = () => {
-  const [config, setConfig] = useState<TConfig | null>()
+  const [config, setConfig] = useState<TConfig | null>();
+  const [uiFeedbackMessage, setUiFeedbackMessage]= useState('');
 
   const [formConfig, setFormConfig] = useState<{
-    schema: Schema, formData: FormData, errors: string[]
+    schema: Schema;
+    formData: FormData;
+    errors: string[];
   }>({
     schema: defaultSchema,
     formData: defaultFormData,
-    errors: []
+    errors: [],
   });
-  const dispatch = useDispatch()
-  const storeAiConfig = useSelector((state: CoreStoreState) => state.whisper.config)
+  const dispatch = useDispatch();
+  const storeAiConfig = useSelector(
+    (state: CoreStoreState) => state.whisper.config,
+  );
 
   useEffect(() => {
-    const storeConfig = storeAiConfig
+    const storeConfig = storeAiConfig;
 
-    if(!storeConfig || !storeConfig.provider) return
-
-    setConfig(storeConfig)
+    setConfig(storeConfig);
     setFormConfig({
       ...formConfig,
-      formData:{
+      formData: {
         ...formConfig.formData,
         provider: storeConfig.provider,
         model: storeConfig.model,
@@ -136,23 +141,26 @@ const AIConfig = () => {
           model: {
             type: 'string',
             title: 'Model Name',
-            enum: PROVIDERS_AND_MODELS[storeConfig.provider].models
-          }
-        }
-      }
-    })
-  }, [storeAiConfig?.provider])
+            enum: storeConfig.provider ? PROVIDERS_AND_MODELS[storeConfig.provider].models : [],
+          },
+        },
+      },
+    });
+  }, [storeAiConfig?.provider]);
 
-  const formChange = ({ formData, schema}: IChangeEvent<FormData>) => {
+  const formChange = ({ formData, schema }: IChangeEvent<FormData>) => {
     if (formData) {
       let _schema = {
-        ...schema
-      }
+        ...schema,
+      };
       let _formData = {
-        ...formData
-      }
+        ...formData,
+      };
 
-      if(formData.provider && formData.provider !== formConfig.formData.provider){
+      if (
+        formData.provider &&
+        formData.provider !== formConfig.formData.provider
+      ) {
         _schema = {
           ...schema,
           properties: {
@@ -160,15 +168,15 @@ const AIConfig = () => {
             model: {
               type: 'string',
               title: 'Model Name',
-              enum: PROVIDERS_AND_MODELS[formData.provider].models
-            }
-          }
-        }
+              enum: PROVIDERS_AND_MODELS[formData.provider].models,
+            },
+          },
+        };
         // clear the previous model selected.
         _formData = {
           ..._formData,
-          model: ''
-        }
+          model: '',
+        };
       }
 
       setFormConfig({
@@ -181,43 +189,55 @@ const AIConfig = () => {
         model: _formData.model,
         apiKey: _formData.apiKey,
         provider: _formData.provider,
-      } as TConfig)
+      } as TConfig);
     }
   };
 
-  const handleSave = () => {
-    const errors: string[] = []
+  const actionUIFeedback = (message: string) => {
+    setUiFeedbackMessage(message)
+    setTimeout(() => {
+      setUiFeedbackMessage('')
+    }, 2000)
+  }
 
-    if(!config || !config.model){
-      errors.push(ERRORS.model)
+  const handleSave = () => {
+    const errors: string[] = [];
+
+    if (!config || !config.model) {
+      errors.push(ERRORS.model);
     }
-    if(!config || !config.provider){
-      errors.push(ERRORS.provider)
+    if (!config || !config.provider) {
+      errors.push(ERRORS.provider);
     }
-    if(!config || !config.apiKey){
-      errors.push(ERRORS.apiKey)
+    if (!config || !config.apiKey) {
+      errors.push(ERRORS.apiKey);
     }
 
     setFormConfig({
       ...formConfig,
-      errors
-    })
-    if(!errors.length && config){
+      errors,
+    });
+    if (!errors.length && config) {
       // should save a config with some redux actions.
-     dispatch(saveConfig(
-      {
-        ...config,
-        baseURL: ''
-      } as TModel
-    ))
+      dispatch(
+        saveConfig({
+          ...config,
+          baseURL: '',
+        } as TModel),
+      );
+
+      //UI feedback
+      actionUIFeedback(SAVE_SUCCESSFULLY_MESSAGE)
     }
-  }
+  };
 
   const clearPreviousConfig = () => {
-    if(storeAiConfig){
-      dispatch(clearConfig())
+    if (storeAiConfig) {
+      dispatch(clearConfig());
+      actionUIFeedback(CLEAR_SUCCESSFULLY_MESSAGE)
+
     }
-  }
+  };
 
   return (
     <Container>
@@ -227,36 +247,50 @@ const AIConfig = () => {
         schema={formConfig.schema}
         uiSchema={{
           apiKey: {
-            "ui:widget": "password",
-          }
+            'ui:widget': 'password',
+          },
         }}
         onChange={formChange}
-        
-      />  
-      <div style={{
-        display:'flex',
-        flexDirection: 'column',
-        gap:'10px',
-        padding: '10px'
-      }}>
+      />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          padding: '10px',
+        }}
+      >
         <ButtonsContainer>
-          <Button title='Save Config' tooltipPosition='top-right' onClick={handleSave}>
+          <Button
+            title="Save Config"
+            tooltipPosition="top-right"
+            onClick={handleSave}
+          >
             <SaveConfig />
           </Button>
-          <Button title='Clear Previous Config!' tooltipPosition='top-right' onClick={clearPreviousConfig}>
+          <Button
+            title="Clear Previous Config!"
+            tooltipPosition="top-right"
+            onClick={clearPreviousConfig}
+          >
             <ClearConfig />
           </Button>
         </ButtonsContainer>
+        {formConfig.errors.map((error, index) => {
+          return (
+            <Notification key={index} type="error">
+              {error}
+            </Notification>
+          );
+        })}
         {
-          formConfig.errors.map((error, index) => {
-            return (
-              <Notification key={index} type='error'>{error}</Notification>
-            )
-          })
+          uiFeedbackMessage && (
+            <Notification type='success'> { uiFeedbackMessage } </Notification>
+          )
         }
       </div>
     </Container>
   );
 };
 
-export default AIConfig
+export default AIConfig;
