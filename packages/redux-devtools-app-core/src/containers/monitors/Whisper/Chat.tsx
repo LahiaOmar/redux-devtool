@@ -33,6 +33,14 @@ const MessageContianer = styled.div`
   column-gap: 20px;
 `
 
+const LoadingState = styled.div`
+  width: 30px;
+  aspect-ratio: 4;
+  background: radial-gradient(circle closest-side, #fff 90%, #ffffff00) 0/calc(100%/3) 100% space;
+  clip-path: inset(0 100% 0 0);
+  animation: l1 1s steps(4) infinite;
+  @keyframes l1 {to{clip-path: inset(0 -34% 0 0)}}
+`
 const ModelMessage = styled(MessageContianer)``
 
 const UserMessage = styled(MessageContianer)``
@@ -42,7 +50,7 @@ const createMessageIcon = (icon: IconType) => styled(icon)`
   height: 25px;
   flex-shrink: 0;
   padding: 10px;
-  border: rgb(153 163 177) 1px solid;
+  border: white 1px solid;
   border-radius: 50%;
 `
 const UserMessageIcon = createMessageIcon(FaUser)
@@ -56,6 +64,15 @@ const TextMessage = styled.div`
 
 const Message = ({ sender, message }: { sender: TWhisperMessages['sender']; message: string }) => {
   if (sender === 'model') {
+    if(!message){
+      return (
+        <ModelMessage>
+          <ModelMessageIcon />
+          <LoadingState />
+        </ModelMessage>
+      )
+    }
+
     return (
       <ModelMessage>
         <ModelMessageIcon />
@@ -81,36 +98,68 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
   const { modelAnswer } = useAIModel(config);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dispatch = useDispatch()
-  const { instanceId, messages: currentMessage } = useSelector((state: CoreStoreState) => {
+  const { instanceId, currentMessage, validConfig } = useSelector((state: CoreStoreState) => {
+    const { messages, config } = state.whisper
     const instanceId = getActiveInstance(state.instances)
-    const messages = state.whisper.messages[instanceId] || []
+    const currentMessage = messages[instanceId] || []
+    const validConfig = config.provider && config.model && config.model
 
     return {
-      messages,
-      instanceId: String(instanceId)
+      currentMessage,
+      instanceId: String(instanceId),
+      validConfig
     }
   });
-  const [messages, setMessages] = useState<TWhisperMessages[]>(currentMessage);
+  const [messages, setMessages] = useState<TWhisperMessages[]>([]);
+  const [needModelResponse, setNeedModelResponse] = useState('')
 
-  const handleSend = async (msg: string) => {
+  const handleSend = (msg: string) => {
     if (msg.trim()) {
       const userMessage = { sender: 'user', message: msg } as TWhisperMessages;
-      setMessages([...messages, userMessage]);
+      const modelMessage = { sender: 'model', message: ''} as TWhisperMessages
+      const _messages = [...messages, userMessage, modelMessage ] 
 
-      const modelResponse = await modelAnswer(msg, actionsMapStates);
-
-      const modelMessage = {
-        sender: 'model',
-        message: modelResponse,
-      } as TWhisperMessages;
-      setMessages([...messages, userMessage, modelMessage]);
+      setMessages(_messages)
+      setNeedModelResponse(msg)
     }
   };
-
+  
   const clearAllMessages = () => {
     dispatch(clearMessages(instanceId))
     setMessages([])
   }
+
+  useEffect(()=> {
+    if(currentMessage.length){
+      setMessages(currentMessage)
+    }
+  }, [])
+
+  useEffect(() => {
+    const getModelResponse = async () => {
+      if(needModelResponse){
+        const modelResponse = await modelAnswer(needModelResponse, actionsMapStates);
+        
+        let _messages = [...messages]
+        const modelMessage = _messages.pop();
+        
+        if(modelMessage){
+          modelMessage.message = modelResponse
+          _messages = _messages.concat(modelMessage)
+          setMessages(_messages);
+          dispatch(saveMessages(instanceId, _messages))
+        }
+        
+        setNeedModelResponse('')
+      }
+    }
+
+    getModelResponse().catch(console.error)
+  }, [needModelResponse, actionsMapStates, messages])
+
+  useEffect(() => {
+    setMessages(currentMessage)
+  }, [instanceId])
 
   useEffect(() => {
     if(containerRef.current){
@@ -118,10 +167,14 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
     }
   }, [messages])
 
-  useEffect(() => {
-    dispatch(saveMessages(instanceId, messages))
-  }, [instanceId, messages])
-
+  if(!validConfig){
+    return (
+      <ChatContainer>
+        <h2>Please Provide the a Model Configuration</h2>
+        <h3>Go to settings/redux-whisper</h3>
+      </ChatContainer>
+    )
+  }
 
   return (
     <ChatContainer ref={containerRef}>
@@ -130,8 +183,8 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
         return <Message key={index} sender={msg.sender} message={msg.message} />;
       })}
       <UserInput
-        sendMessage={async (msg) => {
-          await handleSend(msg);
+        sendMessage={(msg) => {
+          handleSend(msg);
         }}
 
         clearAllMessages={clearAllMessages}

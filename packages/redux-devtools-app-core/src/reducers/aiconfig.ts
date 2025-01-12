@@ -12,7 +12,6 @@ const initialState: TStoreWhisper = {
 } 
 
 export const whisperReducer = (state: TStoreWhisper = initialState , action: CoreStoreAction): TStoreWhisper => {
-  
   if(action.type === 'save_ai_config'){
     const { payload: {provider, apiKey, model, baseURL} } = action
     
@@ -35,17 +34,22 @@ export const whisperReducer = (state: TStoreWhisper = initialState , action: Cor
 
   if(action.type === 'clear_ai_messages'){
     const { instanceId } = action.payload
+    const _messages = {
+      ...state.messages
+    }
+    delete _messages[instanceId]
+
     return {
       ...state,
-      messages: {
-        ...state.messages,
-        [instanceId]: []
-      }
+      messages: _messages
     }
   }
 
   if(action.type === 'save_ai_messages'){
     const { instanceId, messages } = action.payload
+    
+    if(!messages.length) return state
+
     return {
       ...state,
       messages: {
