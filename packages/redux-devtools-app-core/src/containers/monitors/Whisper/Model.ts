@@ -90,11 +90,17 @@ const useAIModel  = (config: TModel) => {
   }
 
   const modelAnswer = async (userMessage: string, actionsMapStates: TActionsMapStates, history: TWhisperMessages[]) => {
-    if(!instance) return 'Error in Model initialization!'
+    try{
+      if(!instance) return 'Error in Model initialization!'
 
-    const modelPrompt = buildModelPrompt(actionsMapStates, history)
-  
-    return await createAnswer(modelPrompt, userMessage)
+      const modelPrompt = buildModelPrompt(actionsMapStates, history)
+    
+      return await createAnswer(modelPrompt, userMessage)
+    }
+    catch(ex: any ){
+      console.error(ex)
+      return `Something wrong with your provider!!!, ${ex.message}`
+    }
   }
 
   useEffect(() => {
