@@ -33,9 +33,12 @@ const PROVIDERS_AND_MODELS = {
   Cohere: {
     models: ['command-r-plus'],
   },
+  Deepseek:{
+    models: ['deepseek-chat']
+  }
 };
 
-const PROVIDERS = ['xAI', 'OpenAI', /**'Ollama' ,*/ 'Cohere'];
+const PROVIDERS = ['xAI', 'OpenAI', 'Deepseek', /**'Ollama' ,*/ 'Cohere'];
 
 export type TProviders = keyof typeof PROVIDERS_AND_MODELS;
 export type TProvidersModels = {

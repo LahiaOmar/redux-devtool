@@ -1,56 +1,61 @@
-import OpenAI from 'openai'
-import { TActionsMapStates } from './index'
-import { TModel } from '../../../components/Settings/AIConfig'
-import { useEffect, useState } from 'react'
-import { CohereClientV2 } from 'cohere-ai'
-import { TWhisperMessages } from '../../../reducers/aiconfig'
-type TInstance = OpenAI | CohereClientV2 | null
+import OpenAI from 'openai';
+import { TActionsMapStates } from './index';
+import { TModel } from '../../../components/Settings/AIConfig';
+import { useEffect, useState } from 'react';
+import { CohereClientV2 } from 'cohere-ai';
+import { TWhisperMessages } from '../../../reducers/aiconfig';
+import { flattenObject } from './utils';
+type TInstance = OpenAI | CohereClientV2 | null;
 
-const useAIModel  = (config: TModel) => {
-  const [instance, setInstance] = useState<TInstance>(null)
 
-  const buildModelPrompt = (actionsList: TActionsMapStates, history: TWhisperMessages[]) => {
+const useAIModel = (config: TModel) => {
+  const [instance, setInstance] = useState<TInstance>(null);
+
+  const buildModelPrompt = (
+    actionsList: TActionsMapStates,
+    history: TWhisperMessages[],
+  ) => {
+    const flattenActions = JSON.stringify(actionsList);
+    const flattenHistory = JSON.stringify(history);
+
+    console.log({ actionsList });
     return `
       You are a debugging assistant for a Redux application. 
-      I will provide you with a list of actions that have occurred and the differences (diffs) between the previous state and the current state of the Redux store. 
-      Your task is to analyze the provided data and answer questions about the Redux store and its modifications.
-  
-      ### Actions and State Differences.
-      [${JSON.stringify(actionsList)}]
+      I will provide you with:
+        - Mapping of Actions and the jsonDiff: list of pairs, each pair is [action, jsonDiff] where action is the name of the dispatched action, and jsonDiff containe the diffrence between the new store and the last store content.
+        - History conversation.
 
-      ### History of the conversation
-      [${JSON.stringify(history)}]
+      Your task is to analyze the provided json stringify data,
+      and answer questions about the Redux store and its modifications, a modification in store state is any CRUD operation to the store state.
+
+  
+      ###  Mapping of Actions and the jsonDiff.
+      [${flattenActions}]
+
+      ### History conversation
+      [${flattenHistory}]
 
       ### Instructions for the Answer
+      1. The Answer should be based (mostly) on the last actions, analyse them carefully, with deep reasoning.
       1. Provide the **minimal possible answer** that directly addresses the user's question.
-      2. Ensure the answer is as **clear and precise** as possible.
       3. If multiple actions or diffs are relevant, list them succinctly.
       4. If the question cannot be answered with the provided data, specify that and suggest what additional information or clarification might be needed.
   
       ### Example Output:  
       *"The action \`REMOVE_ITEM\` triggered the removal of an item from the cart."*   
       *"The last modification was caused by the \`UPDATE_USER\` action, which changed the user's name from 'John' to 'Jane'."*]
-  
-      ---
-  
-      **How it Works in Practice:**
-  
-      For a question like:  
-      *"Which actions caused items to be removed from the store?"*
-  
-      You should respond with:  
-      - \`"REMOVE_ITEM"\` removed an item with the \`inventory\`.  
-      - *"No actions in the log triggered the removal of items from the store."*
       ---
     `
   }
 
-  const createAnswer = async (modelPrompt: string, userPrompt: string): Promise<string> => {
-
-    switch(true){
+  const createAnswer = async (
+    modelPrompt: string,
+    userPrompt: string,
+  ): Promise<string> => {
+    switch (true) {
       case instance instanceof OpenAI: {
         const completion = await instance?.chat.completions.create({
-          model: (config.model) as unknown as string,
+          model: config.model as unknown as string,
           messages: [
             {
               role: 'system',
@@ -58,86 +63,104 @@ const useAIModel  = (config: TModel) => {
             },
             {
               role: 'user',
-              content: userPrompt
-            }
-          ]
-        })
-    
-        return completion?.choices[0].message.content || 'i can\'t an answer :( !!!'
+              content: userPrompt,
+            },
+          ],
+        });
+
+        return (
+          completion?.choices[0].message.content || "i can't an answer :( !!!"
+        );
       }
-      case instance instanceof CohereClientV2 : {
+      case instance instanceof CohereClientV2: {
         const response = await instance.chat({
-          model: (config.model) as unknown as string,
+          model: config.model as unknown as string,
           messages: [
             {
               role: 'system',
-              content: modelPrompt
+              content: modelPrompt,
             },
             {
               role: 'user',
-              content: userPrompt
-            }
-          ]
-        })
-        const content = response.message.content
+              content: userPrompt,
+            },
+          ],
+        });
+        const content = response.message.content;
 
-        if(!content) return 'i can\'t an answer :( !!!'
-        return content[0].text
+        if (!content) return "i can't an answer :( !!!";
+        return content[0].text;
       }
       default:
-        return 'ERROR MODEL RESPOSE!!'
+        return 'ERROR MODEL RESPOSE!!';
     }
-  }
+  };
 
-  const modelAnswer = async (userMessage: string, actionsMapStates: TActionsMapStates, history: TWhisperMessages[]) => {
-    try{
-      if(!instance) return 'Error in Model initialization!'
+  const modelAnswer = async (
+    userMessage: string,
+    actionsMapStates: TActionsMapStates,
+    history: TWhisperMessages[],
+  ) => {
+    try {
+      if (!instance) return 'Error in Model initialization!';
 
-      const modelPrompt = buildModelPrompt(actionsMapStates, history)
-    
-      return await createAnswer(modelPrompt, userMessage)
+      const modelPrompt = buildModelPrompt(actionsMapStates, history);
+
+      return await createAnswer(modelPrompt, userMessage);
+    } catch (ex: any) {
+      console.error(ex);
+      return `Something wrong with your provider!!!, ${ex.message}`;
     }
-    catch(ex: any ){
-      console.error(ex)
-      return `Something wrong with your provider!!!, ${ex.message}`
-    }
-  }
+  };
 
   useEffect(() => {
-    switch(config.provider){
+    switch (config.provider) {
       case 'xAI': {
-        const _instance  = new OpenAI({
+        const _instance = new OpenAI({
           apiKey: config.apiKey,
           dangerouslyAllowBrowser: true,
-          baseURL: "https://api.x.ai/v1"
-        })
+          baseURL: 'https://api.x.ai/v1',
+        });
 
-        setInstance(_instance)
+        setInstance(_instance);
         return;
       }
-      case 'OpenAI' : {
-        const _instance = new OpenAI()
+      case 'OpenAI': {
+        const _instance = new OpenAI({
+          apiKey: config.apiKey,
+          dangerouslyAllowBrowser: true,
+        });
 
-        setInstance(_instance)
-        return ;
+        setInstance(_instance);
+        return;
       }
       case 'Cohere': {
         const _instance = new CohereClientV2({
-          token: config.apiKey
-        })
+          token: config.apiKey,
+        });
 
-        setInstance(_instance)
-        return ;
+        setInstance(_instance);
+        return;
       }
-      default:{
+      case 'Deepseek': {
+        const _instance = new OpenAI({
+          apiKey: config.apiKey,
+          dangerouslyAllowBrowser: true,
+          baseURL: 'https://api.deepseek.com',
+        });
+
+        setInstance(_instance);
+        return;
+      }
+      default: {
         // setInstance(null) // TODO:we should not set the instance to null
       }
     }
-  }, [config])
+  }, [config]);
 
   return {
-    modelAnswer
-  }
-}
+    modelAnswer,
+  };
+};
 
-export { useAIModel }
+export { useAIModel };
