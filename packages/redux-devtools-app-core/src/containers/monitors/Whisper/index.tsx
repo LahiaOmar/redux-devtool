@@ -11,7 +11,6 @@ export type TActionsMapStates = { action: string, jsonDiff: string }[]
 const WhisperChat = ({ aiConfig, actionsById, computedStates, activeState }: WhisperProps) => {
   const [actionsMapStates, setActionsMapStates] = useState<TActionsMapStates>([])
   const lastTimestamp = useRef(-1)
-  console.log({ lastTimestamp: lastTimestamp.current , actionsById, computedStates })
   
   useEffect(() => {
     lastTimestamp.current = -1 ;
@@ -30,7 +29,7 @@ const WhisperChat = ({ aiConfig, actionsById, computedStates, activeState }: Whi
       if(actionsById[index].timestamp < lastTimestamp.current){
         return;
       }
-      
+
       let strAction = '', strState = '';
       strAction = JSON.stringify(actionsById[index])
       if(index === 0){
