@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Chat from './Chat'
 import { CoreStoreState } from '../../../reducers'
 import { connect } from 'react-redux'
@@ -8,13 +8,29 @@ import { diff } from 'jsondiffpatch'
 type WhisperProps = ReturnType<typeof mapStateToProps>;
 export type TActionsMapStates = { action: string, jsonDiff: string }[]
 
-const WhisperChat = ({ aiConfig, actionsById, computedStates }: WhisperProps) => {
+const WhisperChat = ({ aiConfig, actionsById, computedStates, activeState }: WhisperProps) => {
   const [actionsMapStates, setActionsMapStates] = useState<TActionsMapStates>([])
+  const lastTimestamp = useRef(-1)
+  console.log({ lastTimestamp: lastTimestamp.current , actionsById, computedStates })
+  
+  useEffect(() => {
+    lastTimestamp.current = -1 ;
+  }, [activeState])
+  
+  useEffect(() => {
+    if(lastTimestamp.current === -1 && actionsById['0']){
+      lastTimestamp.current = actionsById['0'].timestamp;
+    }
+  }, [])
 
   useEffect(() => {
     const actionsMapState: TActionsMapStates = []
 
     computedStates.forEach((computedState, index) => {
+      if(actionsById[index].timestamp < lastTimestamp.current){
+        return;
+      }
+      
       let strAction = '', strState = '';
       strAction = JSON.stringify(actionsById[index])
       if(index === 0){
@@ -28,6 +44,11 @@ const WhisperChat = ({ aiConfig, actionsById, computedStates }: WhisperProps) =>
     })
 
     setActionsMapStates(actionsMapState)
+    
+    const lastAction = actionsById[ `${computedStates.length}` ];
+    if(lastAction && lastAction.timestamp){
+      lastTimestamp.current = actionsById[ `${computedStates.length}` ].timestamp;
+    }
 
   }, [actionsById, computedStates])
 
@@ -41,7 +62,8 @@ const mapStateToProps = (state: CoreStoreState) => {
   return {
     actionsById,
     computedStates,
-    aiConfig: state.whisper.config
+    aiConfig: state.whisper.config,
+    activeState,
   }
 }
 
