@@ -16,6 +16,7 @@ export * from './constants/actionTypes';
 export { default as middlewares } from './middlewares';
 export * from './middlewares/exportState';
 export * from './reducers';
+export * from './reducers/aiconfig'
 export * from './reducers/instances';
 export * from './reducers/monitor';
 export * from './reducers/notification';
