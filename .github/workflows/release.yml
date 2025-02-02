@@ -15,10 +15,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,30 +29,55 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: pnpm changeset version
-          publish: pnpm run release
+      - name: Build Package
+        run: pnpm run build:all
+
+      - name: Create Chrome Extension Zip
+        run: zip -r extension/chrome/dist/chrome-extension.zip extension/chrome/dist
+
+      - name: Create Edge Extension Zip
+        run: zip -r extension/edge/dist/edge-extension.zip extension/edge/dist
+
+      - name: Create Firefox Extension Zip
+        run: zip -r extension/firefox/dist/firefox-extension.zip extension/firefox/dist
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Archive Chrome Extension
-        uses: actions/upload-artifact@v4
         with:
-          name: chrome
-          path: extension/chrome/dist
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
 
-      - name: Archive Edge Extension
-        uses: actions/upload-artifact@v4
+      - name: Upload Chrome Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: edge
-          path: extension/edge/dist
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: extension/chrome/dist/chrome-extension.zip
+          asset_name: chrome-extension.zip
+          asset_content_type: application/zip
 
-      - name: Archive Firefox Extension
-        uses: actions/upload-artifact@v4
+      - name: Upload Edge Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: firefox
-          path: extension/firefox/dist
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: extension/edge/dist/edge-extension.zip
+          asset_name: edge-extension.zip
+          asset_content_type: application/zip
+
+      - name: Upload Firefox Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: extension/firefox/dist/firefox-extension.zip
+          asset_name: firefox-extension.zip
+          asset_content_type: application/zip
