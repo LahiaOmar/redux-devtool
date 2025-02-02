@@ -92,9 +92,10 @@ const Message = ({ sender, message }: { sender: TWhisperMessages['sender']; mess
 interface IChatWhisper {
   config: TModel;
   actionsMapStates: TActionsMapStates;
+  computedStore: unknown;
 }
 
-const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
+const Chat: FC<IChatWhisper> = ({ config, actionsMapStates, computedStore }) => {
   const { modelAnswer } = useAIModel(config);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dispatch = useDispatch()
@@ -138,7 +139,7 @@ const Chat: FC<IChatWhisper> = ({ config, actionsMapStates }) => {
   useEffect(() => {
     const getModelResponse = async () => {
       if(needModelResponse){
-        const modelResponse = await modelAnswer(needModelResponse, actionsMapStates, messages);
+        const modelResponse = await modelAnswer(needModelResponse, actionsMapStates, messages, computedStore);
         
         let _messages = [...messages]
         const modelMessage = _messages.pop();
@@ -206,9 +207,10 @@ const UserInputContainer = styled.div`
   column-gap: 20px;
 `;
 
-const Input = styled.input`
+const TextArea = styled.textarea`
   width: 60%;
   height: 40px;
+  resize: none;
 `;
 
 const createChatIcon = (icon: IconType) => styled(icon)`
@@ -224,14 +226,18 @@ interface IUserInput {
 }
 const UserInput: FC<IUserInput> = ({ sendMessage, clearAllMessages }) => {
   const [message, setMesage] = useState('');
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
 
   const userInputChange = (text: string) => {
     setMesage(text);
   };
 
-  const onKeyUp = (ev: React.KeyboardEvent<HTMLInputElement>) => {
+  const onKeyUp = (ev: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (ev.key === 'Enter') {
-      sendHandler();
+      if(!ev.shiftKey){
+        ev.preventDefault()
+        sendHandler();
+      }
     }
   };
 
@@ -244,9 +250,21 @@ const UserInput: FC<IUserInput> = ({ sendMessage, clearAllMessages }) => {
     clearAllMessages()
   }
 
+  const adjustHeight = () => {
+    if(textAreaRef.current){
+      textAreaRef.current.style.height = 'auto'; // Reset the height to auto
+      textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px'; // Set the height to the scroll height
+    }
+  }
+
+  useEffect(() => {
+    adjustHeight()
+  }, [message])
+
   return (
     <UserInputContainer>
-      <Input
+      <TextArea
+        ref={textAreaRef}
         value={message}
         onKeyUp={onKeyUp}
         onChange={(ev) => userInputChange(ev.target.value)}

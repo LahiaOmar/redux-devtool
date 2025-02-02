@@ -1,70 +1,81 @@
-import React, { useEffect, useRef, useState } from 'react'
-import Chat from './Chat'
-import { CoreStoreState } from '../../../reducers'
-import { connect } from 'react-redux'
-import { getActiveInstance } from '../../../reducers/instances'
-import { diff } from 'jsondiffpatch'
+import React, { useEffect, useRef, useState } from 'react';
+import Chat from './Chat';
+import { CoreStoreState } from '../../../reducers';
+import { connect } from 'react-redux';
+import { getActiveInstance } from '../../../reducers/instances';
+import { diff } from 'jsondiffpatch';
+import { cleanDiff, flattenObject } from './utils';
 
 type WhisperProps = ReturnType<typeof mapStateToProps>;
-export type TActionsMapStates = { action: string, jsonDiff: string }[]
+export type TActionsMapStates = { action: string; jsonDiff: string }[];
+const DEFAULT_TIMESTAMP = Number.POSITIVE_INFINITY;
 
-const WhisperChat = ({ aiConfig, actionsById, computedStates, activeState }: WhisperProps) => {
-  const [actionsMapStates, setActionsMapStates] = useState<TActionsMapStates>([])
-  const lastTimestamp = useRef(-1)
-  
-  useEffect(() => {
-    lastTimestamp.current = -1 ;
-  }, [activeState])
-  
-  useEffect(() => {
-    if(lastTimestamp.current === -1 && actionsById['0']){
-      lastTimestamp.current = actionsById['0'].timestamp;
-    }
-  }, [])
+const WhisperChat = ({
+  aiConfig,
+  actionsById,
+  clientStore,
+  computedStates,
+}: WhisperProps) => {
+  const [actionsMapStates, setActionsMapStates] = useState<TActionsMapStates>(
+    [],
+  );
 
   useEffect(() => {
-    const actionsMapState: TActionsMapStates = []
+    const actionsMapState: TActionsMapStates = [];
 
     computedStates.forEach((computedState, index) => {
-      if(actionsById[index].timestamp < lastTimestamp.current){
-        return;
-      }
-
       let strAction = '', strState = '';
-      strAction = JSON.stringify(actionsById[index])
-      if(index === 0){
-        strState = JSON.stringify(computedState)
+      const action = actionsById[index];
+      
+      if(!action) return;
+
+      strAction = JSON.stringify({ name : action.action?.type, timestamp: action.timestamp , id: index});
+
+      if (index === 0) {
+        strState = JSON.stringify(flattenObject(computedState));
+      } else {
+        const left = computedStates[index - 1]; // the prev one
+        const right = computedState; // the new one.
+
+        const delta = diff(left, right);
+
+        if(delta){
+          const cleanedDelta = cleanDiff(delta);
+          if(cleanedDelta){
+            const flattend = flattenObject(cleanedDelta);
+            strState = JSON.stringify(flattend)
+          }
+        }
       }
-      else{
-        strState = JSON.stringify(diff(computedState, computedStates[index - 1]))
+
+      if (strState) {
+        actionsMapState.push({ action: strAction, jsonDiff: strState });
       }
+    });
 
-      actionsMapState.push({ action: strAction, jsonDiff: strState })
-    })
-
-    setActionsMapStates(actionsMapState)
-    
-    const lastAction = actionsById[ `${computedStates.length}` ];
-    if(lastAction && lastAction.timestamp){
-      lastTimestamp.current = actionsById[ `${computedStates.length}` ].timestamp;
-    }
-
-  }, [actionsById, computedStates])
+    setActionsMapStates(actionsMapState);
+  }, [actionsById, computedStates]);
 
   return (
-    <Chat actionsMapStates={actionsMapStates} config={aiConfig} />
-  )
-}
+    <Chat
+      actionsMapStates={actionsMapStates}
+      config={aiConfig}
+      computedStore={clientStore}
+    />
+  );
+};
 const mapStateToProps = (state: CoreStoreState) => {
-  const activeState = getActiveInstance(state.instances)
-  const { actionsById, computedStates } = state.instances.states[activeState]
+  const activeState = getActiveInstance(state.instances);
+  const { actionsById, computedStates } = state.instances.states[activeState];
+  const lastComputedStateIndex = Math.max(0, computedStates.length - 1);
+  const clientStore = computedStates[lastComputedStateIndex]; 
+
   return {
     actionsById,
     computedStates,
+    clientStore,
     aiConfig: state.whisper.config,
-    activeState,
-  }
-}
+  };
+};
 
-
-export default connect(mapStateToProps)(WhisperChat)
+export default connect(mapStateToProps)(WhisperChat);

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { CohereClientV2 } from 'cohere-ai';
 import { TWhisperMessages } from '../../../reducers/aiconfig';
 import { flattenObject } from './utils';
+
 type TInstance = OpenAI | CohereClientV2 | null;
 
 
@@ -12,40 +13,57 @@ const useAIModel = (config: TModel) => {
   const [instance, setInstance] = useState<TInstance>(null);
 
   const buildModelPrompt = (
+    newState: unknown,
     actionsList: TActionsMapStates,
     history: TWhisperMessages[],
   ) => {
     const flattenActions = JSON.stringify(actionsList);
     const flattenHistory = JSON.stringify(history);
+    const flattenState = JSON.stringify(newState ? flattenObject(newState) : newState);
 
-    console.log({ actionsList });
     return `
-      You are a debugging assistant for a Redux application. 
-      I will provide you with:
-        - Mapping of Actions and the jsonDiff: list of pairs, each pair is [action, jsonDiff] where action is the name of the dispatched action, and jsonDiff containe the diffrence between the new store and the last store content.
-        - History conversation.
+    ---
+    <Role>
+    Role:
+    You are Redux Whisper, an expert Redux debugging assistant. Analyze the provided Redux store state, action list, and developer questions to give concise, actionable insights. Prioritize clarity and focus on the root cause of issues.
 
-      Your task is to analyze the provided json stringify data,
-      and answer questions about the Redux store and its modifications, a modification in store state is any CRUD operation to the store state.
+    Definition:
 
-  
-      ###  Mapping of Actions and the jsonDiff.
-      [${flattenActions}]
+    - Redux Store State: The Store Object for the React Application (JS Object).
+    - Array of Actions (Array of Object JS): A list of pairs, each pair is an object:
+      - Action:
+        - name: The action name.
+        - timestamp: The timestamp of when the action is dispatched.
+        - id: the action id.
+      - jsonDiff:
+        - A flattened object where each key represents a full path in the Redux state.
+        - The value for each key is a human-readable description of the changes.
+    ---
+    </Role>
 
-      ### History conversation
-      [${flattenHistory}]
+    <Data>
+    **Data**:
+    - **Current State **:
+    {${flattenState}}
 
-      ### Instructions for the Answer
-      1. The Answer should be based (mostly) on the last actions, analyse them carefully, with deep reasoning.
-      1. Provide the **minimal possible answer** that directly addresses the user's question.
-      3. If multiple actions or diffs are relevant, list them succinctly.
-      4. If the question cannot be answered with the provided data, specify that and suggest what additional information or clarification might be needed.
-  
-      ### Example Output:  
-      *"The action \`REMOVE_ITEM\` triggered the removal of an item from the cart."*   
-      *"The last modification was caused by the \`UPDATE_USER\` action, which changed the user's name from 'John' to 'Jane'."*]
-      ---
-    `
+    - **Relevant Actions**:
+    {${flattenActions}}
+    
+    ----
+    
+    **Developer's Question History**:
+    "{${flattenHistory}}"
+
+    </Data>
+
+    <Response>
+    **Response Guidelines**:
+    - Structure:
+      1. Be extremely concise; use the fewest words possible.
+      2. Link actions to state changes.
+      3. Use bullet points or numbered lists for clarity.
+    </Response>
+  `
   }
 
   const createAnswer = async (
@@ -65,7 +83,7 @@ const useAIModel = (config: TModel) => {
               role: 'user',
               content: userPrompt,
             },
-          ],
+          ]
         });
 
         return (
@@ -100,11 +118,12 @@ const useAIModel = (config: TModel) => {
     userMessage: string,
     actionsMapStates: TActionsMapStates,
     history: TWhisperMessages[],
+    newState: unknown
   ) => {
     try {
       if (!instance) return 'Error in Model initialization!';
 
-      const modelPrompt = buildModelPrompt(actionsMapStates, history);
+      const modelPrompt = buildModelPrompt(newState, actionsMapStates, history);
 
       return await createAnswer(modelPrompt, userMessage);
     } catch (ex: any) {
