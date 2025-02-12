@@ -8,7 +8,6 @@ import { cleanDiff, flattenObject } from './utils';
 
 type WhisperProps = ReturnType<typeof mapStateToProps>;
 export type TActionsMapStates = { action: string; jsonDiff: string }[];
-const DEFAULT_TIMESTAMP = Number.POSITIVE_INFINITY;
 
 const WhisperChat = ({
   aiConfig,
